@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localhost Admin Monitoring Panel</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0b0f19;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', monospace, sans-serif;
+            padding: 30px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #1e293b;
+        }
+        .badge {
+            background: #10b981;
+            color: #042f2e;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .refresh-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .refresh-btn:hover { background: #1d4ed8; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 14px 18px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+            font-size: 13px;
+        }
+        th { background: #0f172a; color: #94a3b8; }
+        tr:hover { background: #334155; }
+        .battery-pill {
+            background: #0284c7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h2>Dashboard Monitoring Telemetri</h2>
+            <p style="color: #64748b; font-size: 13px;">Mode Akses: <span class="badge">Localhost Admin Only</span></p>
+        </div>
+        <button class="refresh-btn" onclick="fetchLogs()">↻ Refresh Data</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Waktu</th>
+                <th>OS & Platform</th>
+                <th>Baterai</th>
+                <th>Jaringan</th>
+                <th>RAM / CPU</th>
+                <th>Resolusi Layar</th>
+                <th>Timezone</th>
+            </tr>
+        </thead>
+        <tbody id="logTableBody">
+            <tr>
+                <td colspan="7" style="text-align: center; color: #94a3b8;">Memuat data dari API Endpoint...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        // Samakan URL Endpoint ini dengan yang dimasukkan pada index.html
+        const API_ENDPOINT = "https://650000000000000000000000.mockapi.io/api/v1/logs";
+
+        async function fetchLogs() {
+            const tableBody = document.getElementById('logTableBody');
+            try {
+                const response = await fetch(API_ENDPOINT);
+                const data = await response.json();
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Belum ada log masuk.</td></tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = data.map(item => `
+                    <tr>
+                        <td>${new Date(item.timestamp).toLocaleString('id-ID')}</td>
+                        <td>${item.platform}<br><small style="color:#94a3b8">${item.language}</small></td>
+                        <td><span class="battery-pill">⚡ ${item.battery?.level || 'N/A'} (${item.battery?.charging === 'Ya' ? 'Charging' : 'Discharging'})</span></td>
+                        <td>${item.network?.effectiveType || 'N/A'} (${item.network?.downlink || 'N/A'})</td>
+                        <td>RAM: ${item.deviceMemory || 'N/A'} | CPU: ${item.hardwareConcurrency || 'N/A'} Cores</td>
+                        <td>${item.screenResolution}</td>
+                        <td>${item.timeZone}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#ef4444;">Gagal mengambil data dari endpoint API. Pastikan URL API sudah dikonfigurasi.</td></tr>`;
+            }
+        }
+
+        // Fetch otomatis setiap 10 detik
+        setInterval(fetchLogs, 10000);
+        
+        // Fetch pertama kali saat admin page dibuka
+        fetchLogs();
+    </script>
+</body>
+</html>
